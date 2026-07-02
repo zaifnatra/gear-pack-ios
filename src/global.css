@@ -1,9 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens ported from the web app's globals.css.
+ *
+ * Values are space-separated RGB triplets (not hex) so Tailwind's
+ * `rgb(var(--color-x) / <alpha-value>)` syntax in tailwind.config.js can apply
+ * opacity modifiers (e.g. bg-background/50). Light/dark follows the system color
+ * scheme via prefers-color-scheme, which NativeWind maps to useColorScheme.
+ *
+ * background/foreground match the web exactly (#fff/#171717 light,
+ * #0a0a0a/#ededed dark). muted/border/primary don't exist on the web yet —
+ * these are neutral values derived from the same black/white palette:
+ *   - muted:   neutral-500 / neutral-400 (secondary text)
+ *   - border:  neutral-200 / neutral-800 (hairlines, dividers)
+ *   - primary: equals foreground (minimalist, matches the web's mono aesthetic)
+ */
 :root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+  --color-background: 255 255 255; /* #ffffff */
+  --color-foreground: 23 23 23; /* #171717 */
+  --color-muted: 115 115 115; /* #737373 neutral-500 */
+  --color-border: 229 229 229; /* #e5e5e5 neutral-200 */
+  --color-primary: 23 23 23; /* #171717 (= foreground) */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: 10 10 10; /* #0a0a0a */
+    --color-foreground: 237 237 237; /* #ededed */
+    --color-muted: 163 163 163; /* #a3a3a3 neutral-400 */
+    --color-border: 38 38 38; /* #262626 neutral-800 */
+    --color-primary: 237 237 237; /* #ededed (= foreground) */
+  }
 }
