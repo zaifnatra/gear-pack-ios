@@ -1,37 +1,35 @@
 import Constants from 'expo-constants';
 
-import { supabase } from '@/lib/supabase';
+import { ApiError } from '@/lib/api-error';
+import { DEMO_MODE } from '@/lib/demo';
+
+export { ApiError };
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
-/** Thrown for any non-2xx response; carries the HTTP status for callers/interceptors. */
-export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
-
-async function getAccessToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? null;
-}
-
 /*
- * Single fetch wrapper for the /api/v1 backend. Attaches the Supabase bearer
- * token and the X-App-Version header (§5.9), and on a 401 refreshes the session
- * once and retries — if that still fails, it signs the user out so the UI falls
- * back to the auth stack. Unwraps the backend's { success, data | error }
- * contract, throwing ApiError on failure.
+ * Single fetch wrapper for the /api/v1 backend. In demo mode every request is
+ * served by the in-memory mock router (src/mocks) — no network, no Supabase.
+ *
+ * Against the real backend it attaches the Supabase bearer token and the
+ * X-App-Version header (§5.9), and on a 401 refreshes the session once and
+ * retries — if that still fails, it signs the user out so the UI falls back
+ * to the auth stack. Unwraps the backend's { success, data | error } contract,
+ * throwing ApiError on failure.
  */
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if (DEMO_MODE) {
+    const { handleMockRequest } = await import('@/mocks/router');
+    return handleMockRequest<T>(path, options);
+  }
+
   if (!API_URL) {
     throw new Error('Missing EXPO_PUBLIC_API_URL. Set it in .env (see .env.example).');
   }
+
+  // Lazy so demo mode never initializes the Supabase client (or needs its env).
+  const { supabase } = await import('@/lib/supabase');
 
   const send = async (token: string | null) => {
     const headers = new Headers(options.headers);
@@ -41,7 +39,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     return fetch(`${API_URL}${path}`, { ...options, headers });
   };
 
-  let response = await send(await getAccessToken());
+  const { data: sessionData } = await supabase.auth.getSession();
+  let response = await send(sessionData.session?.access_token ?? null);
 
   if (response.status === 401) {
     const { data, error } = await supabase.auth.refreshSession();

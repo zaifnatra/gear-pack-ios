@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { SocialAuthButtons } from '@/components/social-auth-buttons';
 import { TextField } from '@/components/text-field';
 import { useAuth } from '@/lib/auth-context';
+import { DEMO_MODE } from '@/lib/demo';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -57,6 +58,11 @@ export default function SignInScreen() {
           <View className="gap-2">
             <Text className="text-3xl font-bold text-foreground">Welcome back</Text>
             <Text className="text-base text-muted">Sign in to your GearPack account.</Text>
+            {DEMO_MODE ? (
+              <Text className="text-sm text-emerald-600">
+                Demo mode — any email and password will sign you in.
+              </Text>
+            ) : null}
           </View>
 
           <View className="gap-4">

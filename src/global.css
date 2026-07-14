@@ -25,12 +25,10 @@
   --color-primary: 23 23 23; /* #171717 (= foreground) */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: 10 10 10; /* #0a0a0a */
-    --color-foreground: 237 237 237; /* #ededed */
-    --color-muted: 163 163 163; /* #a3a3a3 neutral-400 */
-    --color-border: 38 38 38; /* #262626 neutral-800 */
-    --color-primary: 237 237 237; /* #ededed (= foreground) */
-  }
+.dark:root {
+  --color-background: 10 10 10; /* #0a0a0a */
+  --color-foreground: 237 237 237; /* #ededed */
+  --color-muted: 163 163 163; /* #a3a3a3 neutral-400 */
+  --color-border: 38 38 38; /* #262626 neutral-800 */
+  --color-primary: 237 237 237; /* #ededed (= foreground) */
 }

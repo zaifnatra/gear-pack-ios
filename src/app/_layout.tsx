@@ -1,7 +1,17 @@
+import '@/global.css';
+
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import { Outfit_600SemiBold, Outfit_700Bold, Outfit_800ExtraBold } from '@expo-google-fonts/outfit';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { Providers } from '@/components/providers';
@@ -11,15 +21,26 @@ SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
   const { session, initializing } = useAuth();
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useColorScheme();
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_800ExtraBold,
+  });
+
+  const ready = !initializing && fontsLoaded;
 
   useEffect(() => {
-    if (!initializing) SplashScreen.hideAsync();
-  }, [initializing]);
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
 
-  // Keep the native splash up until the persisted session is resolved, so we
-  // never flash the auth screen at a returning, already-signed-in user.
-  if (initializing) return null;
+  // Keep the native splash up until fonts + the persisted session are resolved,
+  // so we never flash the auth screen at a returning, already-signed-in user.
+  if (!ready) return null;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { apiFetch } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
+import { DEMO_MODE } from '@/lib/demo';
 
 type AuthContextValue = {
   session: Session | null;
@@ -29,33 +29,69 @@ async function syncAuthUser(): Promise<void> {
   }
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+// Demo mode never touches Supabase: any credentials sign in instantly with a
+// stub session so the whole app runs frontend-only.
+const DEMO_SESSION = {
+  access_token: 'demo',
+  refresh_token: 'demo',
+  expires_in: 3600,
+  token_type: 'bearer',
+  user: { id: 'u-me', email: 'alex@gearpack.app' },
+} as unknown as Session;
+
+function useDemoAuth(): AuthContextValue {
+  const [session, setSession] = useState<Session | null>(null);
+  return useMemo(
+    () => ({
+      session,
+      initializing: false,
+      async signIn() {
+        setSession(DEMO_SESSION);
+      },
+      async signUp() {
+        setSession(DEMO_SESSION);
+      },
+      async signOut() {
+        setSession(null);
+      },
+    }),
+    [session],
+  );
+}
+
+function useSupabaseAuth(): AuthContextValue {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setInitializing(false);
+    if (DEMO_MODE) return; // this hook still mounts in demo mode; do nothing
+    let unsubscribe = () => {};
+    // Dynamic import keeps Supabase (and its env requirements) out of demo mode.
+    import('@/lib/supabase').then(({ supabase }) => {
+      supabase.auth.getSession().then(({ data }) => {
+        setSession(data.session);
+        setInitializing(false);
+      });
+      const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        setSession(nextSession);
+      });
+      unsubscribe = () => data.subscription.unsubscribe();
     });
-
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-    });
-
-    return () => data.subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
-  const value = useMemo<AuthContextValue>(
+  return useMemo<AuthContextValue>(
     () => ({
       session,
       initializing,
       async signIn(email, password) {
+        const { supabase } = await import('@/lib/supabase');
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         await syncAuthUser();
       },
       async signUp(email, password, username) {
+        const { supabase } = await import('@/lib/supabase');
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -68,13 +104,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.session) await syncAuthUser();
       },
       async signOut() {
+        const { supabase } = await import('@/lib/supabase');
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
       },
     }),
     [session, initializing],
   );
+}
 
+// Both branches call the same hooks in the same order; DEMO_MODE is a
+// build-time constant so the conditional hook usage is stable.
+function useAuthValue(): AuthContextValue {
+  const demo = useDemoAuth();
+  const real = useSupabaseAuth();
+  return DEMO_MODE ? demo : real;
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const value = useAuthValue();
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
