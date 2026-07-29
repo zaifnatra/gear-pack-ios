@@ -29,8 +29,9 @@ async function syncAuthUser(): Promise<void> {
   }
 }
 
-// Demo mode never touches Supabase: any credentials sign in instantly with a
-// stub session so the whole app runs frontend-only.
+// Demo mode never touches Supabase: a stub session is active from launch so the
+// app opens straight into the tabs with no sign-in wall. The auth screens still
+// work (sign out from Settings to reach them) and accept any credentials.
 const DEMO_SESSION = {
   access_token: 'demo',
   refresh_token: 'demo',
@@ -40,7 +41,7 @@ const DEMO_SESSION = {
 } as unknown as Session;
 
 function useDemoAuth(): AuthContextValue {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null>(DEMO_SESSION);
   return useMemo(
     () => ({
       session,

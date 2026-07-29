@@ -135,6 +135,24 @@ export interface Notification {
   createdAt: string;
 }
 
+// --- Moderation (App Store guideline 1.2: UGC needs report + block) ---
+
+export type ReportTargetType = 'USER' | 'MESSAGE';
+
+export type ReportReason =
+  | 'SPAM'
+  | 'HARASSMENT'
+  | 'INAPPROPRIATE'
+  | 'IMPERSONATION'
+  | 'OTHER';
+
+export interface ReportInput {
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  details?: string;
+}
+
 export interface SearchResults {
   trips: Pick<Trip, 'id' | 'name' | 'location'>[];
   gear: Pick<GearItem, 'id' | 'name' | 'brand'>[];

@@ -1,4 +1,4 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from 'nativewind';
 
 import { Colors } from '@/constants/theme';
@@ -18,28 +18,28 @@ export default function AppTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} />
+        <Label>Home</Label>
+        <Icon sf={{ default: 'house', selected: 'house.fill' }} />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="trips">
-        <NativeTabs.Trigger.Label>Trips</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'map', selected: 'map.fill' }} />
+        <Label>Trips</Label>
+        <Icon sf={{ default: 'map', selected: 'map.fill' }} />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="ai">
-        <NativeTabs.Trigger.Label>AI</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="sparkles" />
+        <Label>AI</Label>
+        <Icon sf="sparkles" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="gear">
-        <NativeTabs.Trigger.Label>Closet</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="backpack" />
+        <Label>Closet</Label>
+        <Icon sf="backpack" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="social">
-        <NativeTabs.Trigger.Label>Social</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} />
+        <Label>Social</Label>
+        <Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

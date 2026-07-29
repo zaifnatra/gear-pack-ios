@@ -4,8 +4,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 
 import { CreateTripSheet } from '@/components/create-trip-sheet';
 import { TabScreen } from '@/components/tab-screen';
-import { TripCard } from '@/components/trip-card';
-import { formatDateRange } from '@/components/trip-card';
+import { TripCard, formatDateRange } from '@/components/trip-card';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { HeroBanner } from '@/components/ui/hero-banner';
@@ -17,7 +16,9 @@ export default function TripsScreen() {
   const respondInvite = useRespondTripInvite();
   const [createOpen, setCreateOpen] = useState(false);
 
-  const now = Date.now();
+  // Read the clock once per mount — calling Date.now() during render makes the
+  // upcoming/past split unstable across re-renders.
+  const [now] = useState(() => Date.now());
   const upcoming = (trips ?? []).filter((t) => new Date(t.endDate ?? t.startDate).getTime() >= now);
   const past = (trips ?? []).filter((t) => new Date(t.endDate ?? t.startDate).getTime() < now);
 

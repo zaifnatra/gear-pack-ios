@@ -11,6 +11,7 @@ import type {
   Message,
   Notification,
   PublicUser,
+  ReportInput,
   SearchResults,
   Trip,
   TripGearItem,
@@ -249,6 +250,42 @@ export function useCancelFriendRequest() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['friends'] }),
   });
 }
+
+// --- moderation ---
+
+/*
+ * Report + block (App Store guideline 1.2). Blocking removes the friendship and
+ * any conversations with that user, so it invalidates broadly.
+ */
+export function useReportContent() {
+  return useMutation({
+    mutationFn: (input: ReportInput) =>
+      apiFetch('/api/v1/reports', { method: 'POST', body: JSON.stringify(input) }),
+  });
+}
+
+export const useBlockedUsers = () =>
+  useQuery({
+    queryKey: ['users', 'blocked'],
+    queryFn: () => apiFetch<PublicUser[]>('/api/v1/users/blocked'),
+  });
+
+function useBlockMutation(method: 'POST' | 'DELETE') {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => apiFetch(`/api/v1/users/${userId}/block`, { method }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['messages', 'unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['search'] });
+    },
+  });
+}
+
+export const useBlockUser = () => useBlockMutation('POST');
+export const useUnblockUser = () => useBlockMutation('DELETE');
 
 // --- messages ---
 export const useConversations = () =>

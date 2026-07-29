@@ -97,10 +97,15 @@ export default function PackBotScreen() {
 
   return (
     <TabScreen>
+      {/*
+       * No keyboardVerticalOffset: KeyboardAvoidingView measures its own frame
+       * in window coordinates, so the padding it applies already accounts for
+       * the tab bar below it. The old hardcoded 90 lifted the composer that far
+       * above the keyboard. Worth re-checking on a device.
+       */}
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={90}>
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View className="flex-row items-center gap-2 border-b border-border px-4 py-3">
           <View className="h-9 w-9 items-center justify-center rounded-full bg-emerald-600">
             <Bot size={18} color="#ffffff" />
@@ -115,6 +120,7 @@ export default function PackBotScreen() {
           ref={scrollRef}
           contentContainerClassName="p-4 gap-4 pb-6"
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}>
           {messages.map((message) =>
             message.role === 'assistant' ? (

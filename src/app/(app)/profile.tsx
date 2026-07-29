@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Settings } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -33,13 +33,15 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState('');
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (me) {
-      setFullName(me.fullName ?? '');
-      setLocation(me.location ?? '');
-      setBio(me.bio ?? '');
-    }
-  }, [me]);
+  // Seed the form from the fetched profile, and re-seed if it changes. Done
+  // during render rather than in an effect so the inputs are never briefly empty.
+  const [seededFrom, setSeededFrom] = useState<typeof me>(undefined);
+  if (me && me !== seededFrom) {
+    setSeededFrom(me);
+    setFullName(me.fullName ?? '');
+    setLocation(me.location ?? '');
+    setBio(me.bio ?? '');
+  }
 
   const dirty =
     !!me &&

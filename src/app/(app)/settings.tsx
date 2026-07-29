@@ -1,4 +1,6 @@
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
 import { colorScheme as nativewindColorScheme } from 'nativewind';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
@@ -26,6 +28,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
+  const router = useRouter();
   const [theme, setTheme] = useState<ThemeChoice>('system');
 
   const applyTheme = (choice: ThemeChoice) => {
@@ -75,6 +78,21 @@ export default function SettingsScreen() {
               </Pressable>
             ))}
           </View>
+        </Section>
+
+        <Section title="Safety">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/blocked')}
+            className="flex-row items-center justify-between px-4 py-3.5 active:bg-neutral-50 dark:active:bg-neutral-800">
+            <View className="flex-1 pr-3">
+              <Text className="text-sm font-sans-medium text-foreground">Blocked Accounts</Text>
+              <Text className="mt-0.5 text-xs text-neutral-500">
+                Review and unblock hikers you&apos;ve blocked.
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#737373" />
+          </Pressable>
         </Section>
 
         <Section title="Account">

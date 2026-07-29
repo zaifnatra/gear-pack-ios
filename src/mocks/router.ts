@@ -1,7 +1,7 @@
 import { ApiError } from '@/lib/api-error';
 import {
   allUsers,
-  categoryByName,
+  blockUser,
   db,
   friendTrips,
   me,
@@ -13,6 +13,8 @@ import type {
   Condition,
   GearItem,
   Message,
+  PublicUser,
+  ReportInput,
   Trip,
   TripGearItem,
   TripWeatherDay,
@@ -226,12 +228,32 @@ function route(seg: string[], method: string, body: Body, query: URLSearchParams
     const q = (query.get('q') ?? '').toLowerCase().trim();
     if (!q) return [];
     return allUsers.filter(
-      (u) => u.username.toLowerCase().includes(q) || (u.fullName ?? '').toLowerCase().includes(q),
+      (u) =>
+        !db.blockedUserIds.includes(u.id) &&
+        (u.username.toLowerCase().includes(q) || (u.fullName ?? '').toLowerCase().includes(q)),
     );
   }
+  if (key === 'GET /users/blocked') {
+    return db.blockedUserIds
+      .map((id) => allUsers.find((u) => u.id === id))
+      .filter((u): u is PublicUser => Boolean(u));
+  }
   if (seg[0] === 'users' && seg[2] === 'gear') return db.friendGear.get(seg[1]) ?? [];
-  if (seg[0] === 'users' && seg[2] === 'block') return { blocked: true };
-  if (key === 'POST /reports') return { reported: true };
+  if (seg[0] === 'users' && seg[2] === 'block') {
+    if (method === 'POST') {
+      blockUser(seg[1]);
+      return { blocked: true };
+    }
+    if (method === 'DELETE') {
+      // Unblocking only lifts the block — it doesn't restore the friendship.
+      db.blockedUserIds = db.blockedUserIds.filter((id) => id !== seg[1]);
+      return { unblocked: true };
+    }
+  }
+  if (key === 'POST /reports') {
+    db.reports.push(body as unknown as ReportInput);
+    return { reported: true };
+  }
 
   // --- messages ---
   if (key === 'GET /conversations') return db.conversations;
@@ -304,7 +326,9 @@ function route(seg: string[], method: string, body: Body, query: URLSearchParams
         .filter((g) => g.name.toLowerCase().includes(q) || (g.brand ?? '').toLowerCase().includes(q))
         .map((g) => ({ id: g.id, name: g.name, brand: g.brand })),
       users: [...db.friends, ...allUsers.filter((u) => !db.friends.includes(u))].filter(
-        (u) => u.username.toLowerCase().includes(q) || (u.fullName ?? '').toLowerCase().includes(q),
+        (u) =>
+          !db.blockedUserIds.includes(u.id) &&
+          (u.username.toLowerCase().includes(q) || (u.fullName ?? '').toLowerCase().includes(q)),
       ),
     };
   }

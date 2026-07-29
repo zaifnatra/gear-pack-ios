@@ -8,6 +8,7 @@ import type {
   Message,
   Notification,
   PublicUser,
+  ReportInput,
   Trip,
   TripGearItem,
   TripInvite,
@@ -74,7 +75,35 @@ export const db = {
   messages: new Map<string, Message[]>(),
   notifications: [] as Notification[],
   aiHistory: [] as ChatMessage[],
+  blockedUserIds: [] as string[],
+  reports: [] as ReportInput[],
 };
+
+/*
+ * Blocking (App Store guideline 1.2) has to visibly take effect: the user
+ * disappears from friends, requests, search, and DMs, and their messages are
+ * dropped from group chats.
+ */
+export function blockUser(userId: string) {
+  if (!db.blockedUserIds.includes(userId)) db.blockedUserIds.push(userId);
+  db.friends = db.friends.filter((f) => f.id !== userId);
+  db.receivedRequests = db.receivedRequests.filter((r) => r.user.id !== userId);
+  db.sentRequests = db.sentRequests.filter((r) => r.user.id !== userId);
+  db.friendGear.delete(userId);
+
+  for (const convo of [...db.conversations]) {
+    const isDirect = !convo.isGroup && convo.participants.some((p) => p.id === userId);
+    if (isDirect) {
+      db.conversations = db.conversations.filter((c) => c.id !== convo.id);
+      db.messages.delete(convo.id);
+      continue;
+    }
+    convo.participants = convo.participants.filter((p) => p.id !== userId);
+    const remaining = (db.messages.get(convo.id) ?? []).filter((m) => m.sender.id !== userId);
+    db.messages.set(convo.id, remaining);
+    convo.lastMessage = remaining[remaining.length - 1] ?? null;
+  }
+}
 
 // --- Categories (subset of the web hierarchy) ---
 

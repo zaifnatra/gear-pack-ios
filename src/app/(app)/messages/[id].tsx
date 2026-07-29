@@ -1,5 +1,5 @@
-import { useLocalSearchParams } from 'expo-router';
-import { Send } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Heart, MoreVertical, Send } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ModerationSheet, type ModerationTarget } from '@/components/moderation-sheet';
 import { Avatar } from '@/components/ui/avatar';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import {
@@ -79,12 +80,14 @@ function Bubble({
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { data: conversations } = useConversations();
   const { data: messages } = useMessages(id);
   const sendMessage = useSendMessage(id);
   const markRead = useMarkConversationRead(id);
   const toggleReaction = useToggleReaction(id);
   const [input, setInput] = useState('');
+  const [moderating, setModerating] = useState<ModerationTarget | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   const conversation = conversations?.find((c) => c.id === id);
@@ -111,24 +114,55 @@ export default function ChatScreen() {
     sendMessage.mutate(trimmed);
   };
 
+  // DMs get an explicit menu in the header so report/block isn't hidden behind
+  // a long-press (App Store guideline 1.2 wants it findable).
+  const otherUser = conversation && !conversation.isGroup ? conversation.participants[0] : undefined;
+
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
-      <ScreenHeader title={title} />
+      <ScreenHeader
+        title={title}
+        right={
+          otherUser ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Options for ${otherUser.username}`}
+              onPress={() =>
+                setModerating({ type: 'USER', user: otherUser, targetId: otherUser.id })
+              }
+              className="rounded-full p-2 active:opacity-60">
+              <MoreVertical size={20} color="#737373" />
+            </Pressable>
+          ) : undefined
+        }
+      />
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={8}>
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           ref={scrollRef}
           contentContainerClassName="p-4 gap-3"
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}>
           {(messages ?? []).map((message) => (
             <Bubble
               key={message.id}
               message={message}
               isGroup={conversation?.isGroup ?? false}
-              onLongPress={() => toggleReaction.mutate({ messageId: message.id, emoji: '❤️' })}
+              onLongPress={() => {
+                // My own messages have nothing to report — go straight to a reaction.
+                if (message.sender.id === MY_ID) {
+                  toggleReaction.mutate({ messageId: message.id, emoji: '❤️' });
+                  return;
+                }
+                setModerating({
+                  type: 'MESSAGE',
+                  user: message.sender,
+                  targetId: message.id,
+                  preview: message.content,
+                });
+              }}
             />
           ))}
         </ScrollView>
@@ -153,6 +187,26 @@ export default function ChatScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <ModerationSheet
+        target={moderating}
+        onClose={() => setModerating(null)}
+        onBlocked={() => (router.canGoBack() ? router.back() : router.replace('/messages'))}
+        actions={(target) =>
+          target.type === 'MESSAGE'
+            ? [
+                {
+                  label: 'React with ❤️',
+                  icon: <Heart size={18} color="#737373" />,
+                  onPress: () => {
+                    toggleReaction.mutate({ messageId: target.targetId, emoji: '❤️' });
+                    setModerating(null);
+                  },
+                },
+              ]
+            : []
+        }
+      />
     </SafeAreaView>
   );
 }
